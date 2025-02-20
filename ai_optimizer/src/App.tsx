@@ -10,28 +10,63 @@ function App() {
     const [outputText, setOutputText] = useState('');
     const [isPopupOpen, setIsPopupOpen] = useState(false);
     const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    const [isStreaming, setIsStreaming] = useState(false);
 
     const handleOptimize = async (prompt: string, history: ChatMessage[] = []) => {
         try {
-            const response = await axios.post('http://localhost:5000/chat', {
-                prompt,
-                history,
-                model: 'deepseek-r1',
-                stream: false
+            setIsStreaming(true);
+            setOutputText('');
+            
+            const response = await fetch('http://localhost:5000/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    prompt,
+                    history,
+                    model: 'deepseek-r1',
+                    stream: true
+                })
             });
 
-            const result = response.data.content;
-            setOutputText(result);
+            const reader = response.body?.getReader();
+            const decoder = new TextDecoder();
+
+            if (!reader) {
+                throw new Error('Failed to get reader from response');
+            }
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n').filter(line => line.trim());
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            setOutputText(prev => prev + (data.content || ''));
+                        } catch (e) {
+                            console.warn('Failed to parse SSE data:', e);
+                        }
+                    }
+                }
+            }
 
             // 更新聊天历史
-            setChatHistory([
+            setChatHistory(prev => [
                 ...history,
                 { role: 'user', content: prompt },
-                { role: 'assistant', content: result }
+                { role: 'assistant', content: outputText }
             ]);
         } catch (error) {
             console.error('优化请求失败:', error);
             setOutputText('发生错误，请稍后重试');
+        } finally {
+            setIsStreaming(false);
         }
     };
 

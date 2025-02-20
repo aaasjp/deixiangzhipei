@@ -7,6 +7,7 @@ import {
     TextField 
 } from '@mui/material';
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { ChatMessage } from '../types/types';
 
 interface PopupWindowProps {
@@ -15,6 +16,7 @@ interface PopupWindowProps {
     outputText: string;
     onAccept: () => void;
     onRegenerate: (newInstruction: string) => void;
+    isStreaming?: boolean;
 }
 
 const PopupWindow: React.FC<PopupWindowProps> = ({
@@ -22,24 +24,26 @@ const PopupWindow: React.FC<PopupWindowProps> = ({
     onClose,
     outputText,
     onAccept,
-    onRegenerate
+    onRegenerate,
+    isStreaming = false
 }) => {
     const [newInstruction, setNewInstruction] = useState('');
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
-            <DialogTitle>AI 优化结果</DialogTitle>
+            <DialogTitle>AI 优化结果 {isStreaming && '(生成中...)'}</DialogTitle>
             <DialogContent>
-                <TextField
-                    id="output_text_area"
-                    multiline
-                    rows={10}
-                    fullWidth
-                    variant="outlined"
-                    value={outputText}
-                    InputProps={{ readOnly: true }}
-                    margin="normal"
-                />
+                <div style={{ 
+                    padding: '16px',
+                    border: '1px solid rgba(0, 0, 0, 0.23)',
+                    borderRadius: '4px',
+                    marginTop: '16px',
+                    minHeight: '200px',
+                    maxHeight: '400px',
+                    overflow: 'auto'
+                }}>
+                    <ReactMarkdown>{outputText}</ReactMarkdown>
+                </div>
                 <TextField
                     id="input_new_instruction"
                     fullWidth
@@ -58,6 +62,7 @@ const PopupWindow: React.FC<PopupWindowProps> = ({
                         setNewInstruction('');
                     }}
                     color="primary"
+                    disabled={isStreaming}
                 >
                     重新优化
                 </Button>
@@ -65,6 +70,7 @@ const PopupWindow: React.FC<PopupWindowProps> = ({
                     id="accept_btn"
                     onClick={onAccept} 
                     color="primary"
+                    disabled={isStreaming}
                 >
                     接受
                 </Button>
@@ -72,6 +78,7 @@ const PopupWindow: React.FC<PopupWindowProps> = ({
                     id="shutdown_btn"
                     onClick={onClose} 
                     color="secondary"
+                    disabled={isStreaming}
                 >
                     关闭
                 </Button>
