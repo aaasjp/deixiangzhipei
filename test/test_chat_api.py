@@ -4,7 +4,7 @@ import sseclient
 
 def test_normal_chat():
     """测试普通对话接口"""
-    url = "http://10.192.21.180:5000/chat"
+    url = "http://10.191.114.28:5000/chat"
     data = {
         "prompt": "1+1等于几?",
         "history": [],
@@ -27,11 +27,11 @@ def test_normal_chat():
 
 def test_stream_chat():
     """测试流式对话接口"""
-    url = "http://10.192.21.180:5000/chat"
+    url = "http://10.191.114.28:5000/chat"
     data = {
         "prompt": "2+2等于几?",
         "history": [],
-        "model": "deepseek-r1",
+        "model": "deepseek-v1",
         "stream": True
     }
     
@@ -41,20 +41,29 @@ def test_stream_chat():
     response = requests.post(url, json=data, stream=True)
     client = sseclient.SSEClient(response)
     
-    print("\n接收流式响应:")
+    reasoning_content = []
+    response_content = []
+    is_reasoning_print = False
+    is_answer_print = False
+    
     for event in client.events():
         chunk = json.loads(event.data)
         if chunk['is_reasoning']:
-            print("\n思考过程:", end='', flush=True)
-            print(chunk['content'], end='', flush=True)
+            if not is_reasoning_print:
+                print("\n思考过程:\n", end='', flush=True)
+                is_reasoning_print = True
+            reasoning_content.append(chunk['content'])
+            print(''.join(reasoning_content), end='', flush=True)
         else:
-            print("\n回复内容:", end='', flush=True)
-            print(chunk['content'], end='', flush=True)
-    print("\n")
-
+            if not is_answer_print:
+                print("\n回复内容:\n", end='', flush=True)
+                is_answer_print = True
+            response_content.append(chunk['content'])
+            print(''.join(response_content), end='', flush=True)    
+    
 def test_chat_with_history():
     """测试带历史记录的对话"""
-    url = "http://10.192.21.180:5000/chat"
+    url = "http://10.191.114.28:5000/chat"
     history = [
         ("1+1等于几?", "1+1等于2"),
         ("2+2等于几?", "2+2等于4")
@@ -86,7 +95,7 @@ def test_chat_with_history():
 
 def test_stream_chat_with_history():
     """测试带历史记录的流式对话"""
-    url = "http://10.192.21.180:5000/chat"
+    url = "http://10.191.114.28:5000/chat"
     history = [
         ("1+1等于几?", "1+1等于2"),
         ("2+2等于几?", "2+2等于4")
@@ -108,20 +117,31 @@ def test_stream_chat_with_history():
     
     response = requests.post(url, json=data, stream=True)
     client = sseclient.SSEClient(response)
+
+    reasoning_content = []
+    response_content = []
+    is_reasoning_print = False
+    is_answer_print = False
     
     for event in client.events():
         chunk = json.loads(event.data)
         if chunk['is_reasoning']:
-            print("\n思考过程:", end='', flush=True)
-            print(chunk['content'], end='', flush=True)
+            if not is_reasoning_print:
+                print("\n思考过程:\n", end='', flush=True)
+                is_reasoning_print = True
+            reasoning_content.append(chunk['content'])
+            print(''.join(reasoning_content), end='', flush=True)
         else:
-            print("\n回复内容:", end='', flush=True)
-            print(chunk['content'], end='', flush=True)
+            if not is_answer_print:
+                print("\n回复内容:\n", end='', flush=True)
+                is_answer_print = True
+            response_content.append(chunk['content'])
+            print(''.join(response_content), end='', flush=True)
     print("\n")
 
 def test_server_connection():
     """测试服务器连接"""
-    url = "http://10.192.21.180:5000/test"
+    url = "http://10.191.114.28:5000/test"
     try:
         response = requests.get(url)
         if response.status_code == 200:
@@ -143,9 +163,9 @@ if __name__ == "__main__":
         exit(1)
     
     try:
-        test_normal_chat()
-        test_stream_chat()
-        test_chat_with_history()
+        # test_normal_chat()
+        # test_stream_chat()
+        # test_chat_with_history()
         test_stream_chat_with_history()
         
         print("\n所有测试完成!")
