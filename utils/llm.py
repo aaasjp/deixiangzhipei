@@ -16,7 +16,7 @@ def format_messages(prompt, history, system_prompt=None):
     格式化消息历史
     Args:
         prompt: 当前用户输入
-        history: 历史对话记录 list[tuple(user_input, ai_response)]
+        history: 历史对话记录 list[dict] 格式为 [{'role': 'user'/'assistant', 'content': '消息内容'}, ...]
         system_prompt: 系统提示词，默认为 None
     Returns:
         list: OpenAI 消息格式
@@ -24,10 +24,15 @@ def format_messages(prompt, history, system_prompt=None):
     messages = []
     if system_prompt:
         messages.append({"role": "system", "content": system_prompt})
-    for user_input, ai_response in history:
-        messages.append({"role": "user", "content": user_input})
-        messages.append({"role": "assistant", "content": ai_response})
+    
+    # 直接添加历史记录，因为已经是正确的格式
+    if history:
+        messages.extend(history)
+        
+    # 添加当前用户输入
     messages.append({"role": "user", "content": prompt})
+    
+    print(f"----------------messages:\n {messages}")
     return messages
 
 def chat_completion(prompt, history=None, model="deepseek-r1", system_prompt=None):
@@ -65,6 +70,7 @@ def chat_completion_stream(prompt, history=None, model="deepseek-r1", system_pro
     Yields:
         tuple: (is_reasoning, content) 其中 is_reasoning 表示是否为思考过程，content 为内容
     """
+    print(f"----------------system_prompt:\n {system_prompt}")
     history = history or []
     messages = format_messages(prompt, history, system_prompt)
     client = get_client()
@@ -121,8 +127,8 @@ if __name__ == "__main__":
     # 3. 带历史记录的对话示例
     print("\n" + "="*20 + "带历史记录的对话" + "="*20)
     history = [
-        ("你好", "你好！很高兴见到你。"),
-        ("你是谁", "我是一个AI助手，可以帮助回答你的问题。")
+        {"role": "user", "content": "你好"},
+        {"role": "assistant", "content": "你好！很高兴见到你。"}
     ]
     prompt = "你能做什么"
     response = chat_completion(prompt, history, model=model, system_prompt=system_prompt)
@@ -134,14 +140,13 @@ if __name__ == "__main__":
     # 4. 带历史记录的流式对话示例
     print("\n" + "="*20 + "带历史记录的流式对话" + "="*20)
     history = [
-        ("1加1等于几", "1加1等于2"),
-        ("2加2等于几", "2加2等于4")
+        {"role": "user", "content": "1加1等于几"},
+        {"role": "assistant", "content": "1加1等于2"}
     ]
     prompt = "那4加4等于几"
     print("历史对话：")
-    for user_msg, ai_msg in history:
-        print(f"用户: {user_msg}")
-        print(f"AI: {ai_msg}\n")
+    for message in history:
+        print(f"{message['role'].capitalize()}: {message['content']}")
     
     print("当前问题：", prompt)
     print("\n思考过程：")

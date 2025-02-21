@@ -11,21 +11,23 @@ CORS(app)  # 启用CORS
 def test():
     return jsonify({"message": "Server is running!"})
 
-@app.route('/chat', methods=['POST'])  # 确保路由路径是 /chat
-def chat():
+@app.route('/optimize_course_scense', methods=['POST'])  # 确保路由路径是 /optimize_course_scense
+def optimize_course_scense():
     data = request.json
-    print(f"Received chat request: {data}")  # 添加详细的日志
+    print(f"Received optimize_course_scense request: {data}")  # 添加详细的日志
     prompt = data.get('prompt', '')
     history = data.get('history', [])
     model = data.get('model', 'deepseek-r1')
     stream = data.get('stream', False)
-    
+
     if not prompt:
         return jsonify({'error': 'Prompt is required'}), 400
+
+    system_prompt = "你是一个AI助手。"
     
     if stream:
         def generate():
-            for is_reasoning, content in chat_completion_stream(prompt, history, model):
+            for is_reasoning, content in chat_completion_stream(prompt, history, model,system_prompt=system_prompt):
                 chunk = {
                     'is_reasoning': is_reasoning,
                     'content': content
@@ -34,7 +36,7 @@ def chat():
                 
         return Response(generate(), mimetype='text/event-stream')
     else:
-        response = chat_completion(prompt, history, model)
+        response = chat_completion(prompt, history, model,system_prompt=system_prompt)
         return jsonify(response)
 
 if __name__ == '__main__':
